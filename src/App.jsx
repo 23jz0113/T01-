@@ -1,45 +1,62 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-router-dom";
-import Login from "./pages/Login";
-import Ranking from "./pages/Ranking";
-import EventEdit from "./pages/EventEdit";
-import UserEdit from "./pages/UserEdit";
+import { useState, useEffect } from 'react';
+import { Routes, Route, BrowserRouter, useNavigate } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
+import EventEdit from './pages/EventEdit';
+import UserEdit from './pages/UserEdit';
+import Announcements from './pages/Announcements';
+// import Security from './pages/Security'; // ★★★ 不要なので削除 ★★★
+import Logout from './pages/Logout';
 
-function Navbar() {
+const IdleTimer = ({ onIdle }) => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const timeout = 30 * 60 * 1000;
+    let timer;
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        onIdle();
+        navigate("/");
+      }, timeout);
+    };
+    const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+    resetTimer();
+    return () => {
+      clearTimeout(timer);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [onIdle, navigate]);
+  return null;
+};
+
+function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
+  useEffect(() => { localStorage.setItem('isLoggedIn', isLoggedIn); }, [isLoggedIn]);
+  const handleLogin = () => setIsLoggedIn(true);
+  const handleLogout = () => setIsLoggedIn(false);
+
   return (
-    <nav className="bg-blue-600 text-white p-4 flex flex-wrap justify-between items-center">
-      <h1 className="text-xl font-bold mb-2 sm:mb-0">管理システム</h1>
-      <div className="flex flex-wrap gap-2">
-        <Link to="/ranking" className="px-3 py-1 bg-blue-500 hover:bg-blue-700 rounded">ランキング</Link>
-        <Link to="/event" className="px-3 py-1 bg-blue-500 hover:bg-blue-700 rounded">イベント編集</Link>
-        <Link to="/user" className="px-3 py-1 bg-blue-500 hover:bg-blue-700 rounded">ユーザー管理</Link>
-        <Link to="/" className="px-3 py-1 bg-gray-500 hover:bg-gray-700 rounded">ログアウト</Link>
+    <BrowserRouter>
+      {isLoggedIn && <IdleTimer onIdle={handleLogout} />}
+      <div className="bg-slate-50 min-h-screen">
+        {isLoggedIn && <Navbar />}
+        <main className={isLoggedIn ? "pt-20" : ""}>
+          <Routes>
+            <Route path="/" element={<Login onLogin={handleLogin} />} />
+            <Route path="/logout" element={<Logout onLogout={handleLogout} />} />
+            
+            <Route path="/event-edit" element={<ProtectedRoute isLoggedIn={isLoggedIn}><EventEdit /></ProtectedRoute>} />
+            <Route path="/user-edit" element={<ProtectedRoute isLoggedIn={isLoggedIn}><UserEdit /></ProtectedRoute>} />
+            <Route path="/announcements" element={<ProtectedRoute isLoggedIn={isLoggedIn}><Announcements /></ProtectedRoute>} />
+            {/* ★★★ /security のルートを削除 ★★★ */}
+          </Routes>
+        </main>
       </div>
-    </nav>
+    </BrowserRouter>
   );
 }
 
-export default function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route
-          path="/*"
-          element={
-            <div className="min-h-screen bg-gray-50">
-              <Navbar />
-              <div className="p-6">
-                <Routes>
-                  <Route path="/ranking" element={<Ranking />} />
-                  <Route path="/event" element={<EventEdit />} />
-                  <Route path="/user" element={<UserEdit />} />
-                  <Route path="*" element={<Navigate to="/ranking" replace />} />
-                </Routes>
-              </div>
-            </div>
-          }
-        />
-      </Routes>
-    </Router>
-  );
-}
+export default App;
