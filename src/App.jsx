@@ -51,7 +51,6 @@ function App() {
             <Route path="/event-edit" element={<ProtectedRoute isLoggedIn={isLoggedIn}><EventEdit /></ProtectedRoute>} />
             <Route path="/user-edit" element={<ProtectedRoute isLoggedIn={isLoggedIn}><UserEdit /></ProtectedRoute>} />
             <Route path="/announcements" element={<ProtectedRoute isLoggedIn={isLoggedIn}><Announcements /></ProtectedRoute>} />
-            {/* ★★★ /security のルートを削除 ★★★ */}
           </Routes>
         </main>
       </div>

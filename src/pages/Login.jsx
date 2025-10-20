@@ -14,7 +14,7 @@ export default function Login({ onLogin }) {
       // ★★★ 変更点: 移動先を /dashboard から /event-edit へ変更 ★★★
       navigate("/event-edit"); 
     } else {
-      alert("メールアドレスまたはパスワードが間違っています");
+      alert("管理者IDまたはパスワードが間違っています");
     }
   };
 
@@ -25,7 +25,7 @@ export default function Login({ onLogin }) {
         <h1 className="text-3xl font-bold text-center text-slate-800 mb-6">管理画面ログイン</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="input-label">メールアドレス</label>
+            <label htmlFor="email" className="input-label">管理者ID</label>
             <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-field" required />
           </div>
           <div>

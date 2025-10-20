@@ -24,7 +24,6 @@ export default function Navbar() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  // ★★★ 変更点: セキュリティを削除 ★★★
   const navLinks = [
     { to: "/event-edit", text: "イベント管理" },
     { to: "/user-edit", text: "ユーザー管理" },
