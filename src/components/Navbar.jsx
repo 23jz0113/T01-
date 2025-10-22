@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 
-// LogoutModalは変更なし
 const LogoutModal = ({ isOpen, onConfirm, onCancel }) => {
   if (!isOpen) return null;
   return (
@@ -18,11 +17,12 @@ const LogoutModal = ({ isOpen, onConfirm, onCancel }) => {
   );
 };
 
-
-export default function Navbar() {
+export default function Navbar({ isLoggedIn, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const navigate = useNavigate();
+
+  if (!isLoggedIn) return null; // ← App側の状態だけ見て制御
 
   const navLinks = [
     { to: "/event-edit", text: "イベント管理" },
@@ -31,6 +31,9 @@ export default function Navbar() {
   ];
 
   const handleLogoutConfirm = () => {
+    sessionStorage.clear();
+    localStorage.setItem("isLoggedIn", "false");
+    if (onLogout) onLogout();
     setIsLogoutModalOpen(false);
     navigate("/logout");
   };
@@ -44,11 +47,18 @@ export default function Navbar() {
           </NavLink>
           <ul className="hidden space-x-6 md:flex">
             {navLinks.map((link) => (
-              <li key={link.to}><NavLink to={link.to} className="nav-link-desktop">{link.text}</NavLink></li>
+              <li key={link.to}>
+                <NavLink to={link.to} className="nav-link-desktop">{link.text}</NavLink>
+              </li>
             ))}
-            <li><button onClick={() => setIsLogoutModalOpen(true)} className="nav-link-desktop">ログアウト</button></li>
+            <li>
+              <button onClick={() => setIsLogoutModalOpen(true)} className="nav-link-desktop">
+                ログアウト
+              </button>
+            </li>
           </ul>
-          {/* ... (ハンバーガーボタンとスマホメニューは変更なし) ... */}
+
+          {/* ハンバーガーメニュー */}
           <button className="z-50 focus:outline-none md:hidden" onClick={() => setIsOpen(!isOpen)}>
             <div className="relative h-6 w-6">
               <span className={`absolute block h-0.5 w-full bg-white transition-all duration-300 ${isOpen ? 'top-1/2 -translate-y-1/2 rotate-45' : 'top-1'}`} />
@@ -57,15 +67,26 @@ export default function Navbar() {
             </div>
           </button>
         </div>
+
+        {/* スマホ用メニュー */}
         <div className={`absolute w-full transform bg-slate-700 transition-all duration-300 ease-in-out md:hidden ${isOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"} overflow-hidden`}>
           <ul className="flex flex-col p-4">
             {navLinks.map((link) => (
-              <li key={link.to}><NavLink to={link.to} className="nav-link-mobile" onClick={() => setIsOpen(false)}>{link.text}</NavLink></li>
+              <li key={link.to}>
+                <NavLink to={link.to} className="nav-link-mobile" onClick={() => setIsOpen(false)}>
+                  {link.text}
+                </NavLink>
+              </li>
             ))}
-            <li><button onClick={() => { setIsOpen(false); setIsLogoutModalOpen(true); }} className="nav-link-mobile w-full">ログアウト</button></li>
+            <li>
+              <button onClick={() => { setIsOpen(false); setIsLogoutModalOpen(true); }} className="nav-link-mobile w-full">
+                ログアウト
+              </button>
+            </li>
           </ul>
         </div>
       </nav>
+
       <LogoutModal isOpen={isLogoutModalOpen} onConfirm={handleLogoutConfirm} onCancel={() => setIsLogoutModalOpen(false)} />
     </>
   );

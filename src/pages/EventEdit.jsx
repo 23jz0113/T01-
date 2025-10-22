@@ -36,7 +36,7 @@ const EventPage = () => {
       { id: 2, title: "クリスマスコーデ", start: "2025-12-01", end: "2025-12-25", banner: "https://via.placeholder.com/200x80?text=Christmas", status: "published" },
       { id: 3, title: "春の新作コーデ", start: "2026-04-01", end: "2026-04-30", banner: "https://via.placeholder.com/200x80?text=Spring", status: "published" },
       { id: 4, title: "バレンタイン（下書き）", start: "2026-02-01", end: "2026-02-14", banner: "https://via.placeholder.com/200x80?text=Valentine", status: "draft" },
-      { id: 5, title: "過去のイベント（アーカイブ）", start: "2025-01-01", end: "2025-01-15", banner: "https://via.placeholder.com/200x80?text=Archived", status: "archived" },
+      { id: 5, title: "夏のコーデ（アーカイブ）", start: "2025-07-01", end: "2025-07-31", banner: "https://via.placeholder.com/200x80?text=Summer", status: "archived" },
     ];
   });
   useEffect(() => {
