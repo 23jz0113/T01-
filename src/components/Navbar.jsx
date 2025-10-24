@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 
+// ★★★ 変更点: modal-overlay に z-[100] を追加 ★★★
 const LogoutModal = ({ isOpen, onConfirm, onCancel }) => {
   if (!isOpen) return null;
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay z-[100]">
       <div className="modal-content text-center">
         <h2 className="text-xl font-bold mb-4 text-slate-800">ログアウト確認</h2>
         <p className="mb-6 text-slate-600">本当にログアウトしますか？</p>
