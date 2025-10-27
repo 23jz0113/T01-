@@ -157,6 +157,7 @@ const AnnouncementPage = () => {
       showToast("タイトルを入力してください", "error");
       return;
     }
+    
     if (!data.content || !data.content.trim()) {
       showToast("内容を入力してください", "error");
       return;
