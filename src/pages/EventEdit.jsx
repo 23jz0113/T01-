@@ -50,9 +50,13 @@ const EventFormModal = ({ event, onSave, onClose }) => {
   const handleSubmit = () => {
     if (!formData.keyword.trim()) return setError("キーワードを入力してください");
     if (!formData.start_date || !formData.end_date) return setError("開始日・終了日を入力してください");
+  
     onSave({
       ...event,
-      keyword: { name: formData.keyword },
+      keyword: {
+        id: event?.keyword?.id, // ← ここを追加
+        name: formData.keyword
+      },
       start_date: formData.start_date,
       end_date: formData.end_date,
     });
@@ -120,58 +124,139 @@ const EventPage = () => {
   const handleClose = () => { setIsModalOpen(false); setEditingEvent(null); };
 
   /* --- 保存（編集 or 新規） --- */
-  /* --- 保存（編集 or 新規） --- */
-const handleSave = async (event) => {
-  try {
-    if (event.id) {
-      // ✅ 既存イベント → 更新APIへ
-      const res = await fetch(`http://localhost/T01/public/api/rankings/update/${event.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          keywords_id: event.keyword.id,
-          start_date: event.start_date,
-          end_date: event.end_date
-        }),
-      });
-      if (!res.ok) throw new Error("更新失敗");
-    } else {
-      // ✅ 新規イベント → uploadAPIへ
-      const res = await fetch("http://localhost/T01/public/api/rankings/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: event.keyword.name,
-          start_date: event.start_date,
-          end_date: event.end_date,
-        }),
-      });
-      if (!res.ok) throw new Error("登録失敗");
+  const handleSave = async (evt) => {
+    try {
+      let keywordId = evt.keyword?.id; // 既存のキーワードID
+  
+      // 1. キーワードの登録 or 更新
+      if (keywordId) {
+        // 既存キーワード → 名前を更新するだけ
+        const keywordRes = await fetch(
+          `http://localhost/T01/public/api/keywords/update/${keywordId}`,
+          {
+            method: "POST", // LaravelはPOSTで受け取る仕様
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: evt.keyword.name }),
+          }
+        );
+  
+        if (!keywordRes.ok) {
+          const errorText = await keywordRes.text();
+          console.error("キーワード更新エラー:", errorText);
+          throw new Error("既存キーワードの更新に失敗");
+        }
+  
+      } else {
+        // 新規キーワード → 作成
+        const keywordRes = await fetch(
+          "http://localhost/T01/public/api/keywords/upload",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: evt.keyword.name }),
+          }
+        );
+  
+        if (!keywordRes.ok) {
+          const errorText = await keywordRes.text();
+          console.error("キーワード作成エラー:", errorText);
+          throw new Error("新規キーワード作成に失敗");
+        }
+  
+        const keywordData = await keywordRes.json();
+        keywordId = keywordData.data?.id;
+        if (!keywordId) throw new Error("新規キーワードIDが取得できませんでした");
+      }
+  
+      // 2. ランキングの登録または更新
+      let rankingRes;
+      if (evt.id) {
+        // 更新
+        rankingRes = await fetch(
+          `http://localhost/T01/public/api/rankings/update/${evt.id}`,
+          {
+            method: "POST", // LaravelはPOSTで受け取る仕様
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              keywords_id: keywordId,
+              start_date: evt.start_date,
+              end_date: evt.end_date,
+            }),
+          }
+        );
+      } else {
+        // 新規作成
+        rankingRes = await fetch(
+          "http://localhost/T01/public/api/rankings/upload",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              keywords_id: keywordId,
+              start_date: evt.start_date,
+              end_date: evt.end_date,
+            }),
+          }
+        );
+      }
+  
+      if (!rankingRes.ok) {
+        const errorText = await rankingRes.text();
+        console.error("ランキング登録/更新エラー:", errorText);
+        throw new Error("ランキング保存に失敗");
+      }
+  
+      showToast("保存しました");
+      handleClose();
+  
+      // 再取得して画面に反映
+      const refetch = await fetch("http://localhost/T01/public/api/rankings");
+      const newData = await refetch.json();
+      setEvents(newData);
+  
+    } catch (err) {
+      console.error(err);
+      showToast("保存に失敗しました", "error");
     }
-
-    showToast("保存しました");
-    handleClose();
-
-    // 再取得して反映
-    const refetch = await fetch("http://localhost/T01/public/api/rankings");
-    const newData = await refetch.json();
-    setEvents(newData);
-
-  } catch (err) {
-    console.error(err);
-    showToast("保存に失敗しました", "error");
-  }
-};
+  };
+  
+  
+  
 
 
   /* --- 削除 --- */
   const handleDelete = (id) => {
     const evt = events.find((e) => e.id === id);
     if (!evt) return;
+  
     showConfirmation(`「${evt.keyword?.name || evt.keyword || ""}」を削除しますか？`, async () => {
       try {
-        const res = await fetch(`http://localhost/T01/public/api/rankings/destroy/${id}`, { method: "DELETE" });
-        if (!res.ok) throw new Error("削除失敗");
+        // 1. ランキングの削除
+        const rankingRes = await fetch(`http://localhost/T01/public/api/rankings/destroy/${id}`, {
+          method: "DELETE",
+        });
+  
+        if (!rankingRes.ok) {
+          const rankingError = await rankingRes.text();
+          console.error("ランキング削除エラー:", rankingError);
+          throw new Error("ランキング削除失敗");
+        }
+  
+        // 2. キーワードの削除
+        const keywordId = evt.keyword?.id;
+        if (keywordId) {
+          const keywordRes = await fetch(`http://localhost/T01/public/api/keywords/destroy/${keywordId}`, {
+            method: "DELETE",
+          });
+  
+          if (!keywordRes.ok) {
+            const keywordError = await keywordRes.text();
+            console.error("キーワード削除エラー:", keywordError);
+            throw new Error("キーワード削除失敗");
+          }
+        }
+  
+        // イベントリストを再取得
         await fetchEvents();
         showToast("削除しました");
         hideConfirmation();

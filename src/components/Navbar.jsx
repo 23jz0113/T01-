@@ -28,7 +28,7 @@ export default function Navbar({ isLoggedIn, onLogout }) {
   const navLinks = [
     { to: "/event-edit", text: "イベント管理" },
     { to: "/user-edit", text: "ユーザー管理" },
-    { to: "/announcements", text: "お知らせ管理" },
+    // { to: "/announcements", text: "お知らせ管理" },
   ];
 
   const handleLogoutConfirm = () => {
