@@ -31,6 +31,7 @@ const UserPage = () => {
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState({ message: "", type: "", visible: false });
 
+  /* --- API取得 --- */
   const fetchUsers = async () => {
     try {
       const res = await fetch("http://localhost/T01/public/api/users/public");
@@ -38,7 +39,7 @@ const UserPage = () => {
       setUsers(data);
     } catch (err) {
       console.error(err);
-      showToast("取得失敗", "error");
+      showToast("ユーザー取得失敗", "error");
     }
   };
 
@@ -48,7 +49,9 @@ const UserPage = () => {
 
   const showToast = (message, type = "success") => setToast({ message, type, visible: true });
 
+  /* --- フィルタリング --- */
   const filteredUsers = users.filter((u) => {
+    if (u.statuses_id === 3) return false; // ★ statuses_id=3 のユーザーを非表示
     const matchSearch =
       u.username?.toLowerCase().includes(search.toLowerCase()) ||
       u.email?.toLowerCase().includes(search.toLowerCase());
@@ -59,6 +62,7 @@ const UserPage = () => {
     return true;
   });
 
+  /* --- ステータス表示 --- */
   const getStatusBadge = (user) => (
     <span
       className={`px-2 py-1 rounded-full text-sm font-semibold ${

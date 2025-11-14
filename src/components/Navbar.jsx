@@ -1,39 +1,60 @@
-import { useState } from "react";
+// Navbar.jsx
+import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 
-// ★★★ 変更点: modal-overlay に z-[100] を追加 ★★★
+// ログアウト確認モーダル
 const LogoutModal = ({ isOpen, onConfirm, onCancel }) => {
   if (!isOpen) return null;
+
   return (
-    <div className="modal-overlay z-[100]">
-      <div className="modal-content text-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl text-center">
         <h2 className="text-xl font-bold mb-4 text-slate-800">ログアウト確認</h2>
         <p className="mb-6 text-slate-600">本当にログアウトしますか？</p>
         <div className="flex justify-center gap-4">
-          <button onClick={onCancel} className="btn btn-secondary w-32">キャンセル</button>
-          <button onClick={onConfirm} className="btn btn-danger w-32">ログアウト</button>
+          <button 
+            onClick={onCancel} 
+            className="w-32 rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 transition"
+          >
+            キャンセル
+          </button>
+          <button 
+            onClick={onConfirm} 
+            className="w-32 rounded-md bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition"
+          >
+            ログアウト
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-export default function Navbar({ isLoggedIn, onLogout }) {
+export default function Navbar({ onLogout }) {
+  const [user, setUser] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  if (!isLoggedIn) return null; // ← App側の状態だけ見て制御
+  // localStorage からユーザー情報を取得
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser) setUser(storedUser);
+  }, []);
+
+  if (!user) return null; // ログインしていなければ表示しない
+
+  const username = user.username;
 
   const navLinks = [
     { to: "/event-edit", text: "イベント管理" },
     { to: "/user-edit", text: "ユーザー管理" },
-    // { to: "/announcements", text: "お知らせ管理" },
   ];
 
   const handleLogoutConfirm = () => {
     sessionStorage.clear();
     localStorage.setItem("isLoggedIn", "false");
+    localStorage.removeItem("user");
     if (onLogout) onLogout();
     setIsLogoutModalOpen(false);
     navigate("/logout");
@@ -43,10 +64,21 @@ export default function Navbar({ isLoggedIn, onLogout }) {
     <>
       <nav className="fixed top-0 z-40 w-full bg-slate-800 text-white shadow-lg">
         <div className="mx-auto flex max-w-7xl items-center justify-between p-4">
-          <NavLink to="/event-edit" className="text-2xl font-bold tracking-wider">
-            管理システム
-          </NavLink>
-          <ul className="hidden space-x-6 md:flex">
+          {/* 左: ロゴ + ユーザー名 */}
+          <div className="flex items-center gap-4">
+            <NavLink to="/event-edit" className="text-2xl font-bold tracking-wider">
+              管理システム
+            </NavLink>
+            <div className="flex items-center gap-2 bg-slate-700 px-3 py-1 rounded-full text-sm">
+              <div className="h-6 w-6 rounded-full bg-slate-400 flex items-center justify-center text-xs font-bold">
+                {username[0]?.toUpperCase() || "A"}
+              </div>
+              <span>{username}</span>
+            </div>
+          </div>
+
+          {/* デスクトップメニュー */}
+          <ul className="hidden space-x-6 md:flex items-center">
             {navLinks.map((link) => (
               <li key={link.to}>
                 <NavLink to={link.to} className="nav-link-desktop">{link.text}</NavLink>
@@ -88,7 +120,12 @@ export default function Navbar({ isLoggedIn, onLogout }) {
         </div>
       </nav>
 
-      <LogoutModal isOpen={isLogoutModalOpen} onConfirm={handleLogoutConfirm} onCancel={() => setIsLogoutModalOpen(false)} />
+      {/* ログアウトモーダル */}
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onConfirm={handleLogoutConfirm}
+        onCancel={() => setIsLogoutModalOpen(false)}
+      />
     </>
   );
 }

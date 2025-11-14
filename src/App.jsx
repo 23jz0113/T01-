@@ -5,9 +5,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import EventEdit from './pages/EventEdit';
 import UserEdit from './pages/UserEdit';
-import Announcements from './pages/Announcements';
 import Logout from './pages/Logout';
 
+// 無操作時に自動ログアウトするタイマーコンポーネント
 const IdleTimer = ({ onIdle }) => {
   const navigate = useNavigate();
   useEffect(() => {
@@ -81,10 +81,6 @@ function App() {
             <Route
               path="/user-edit"
               element={<ProtectedRoute isLoggedIn={isLoggedIn}><UserEdit /></ProtectedRoute>}
-            />
-            <Route
-              path="/announcements"
-              element={<ProtectedRoute isLoggedIn={isLoggedIn}><Announcements /></ProtectedRoute>}
             />
           </Routes>
         </main>
