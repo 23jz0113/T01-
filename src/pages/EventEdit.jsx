@@ -57,7 +57,7 @@ const EventFormModal = ({ event, onSave, onClose, isKeywordLocked }) => {
   }, [event]);
 
   const handleChange = (e) => {
-    if (isKeywordLocked && e.target.name === "keyword") return; // 公開中は変更不可
+    if (isKeywordLocked && e.target.name === "keyword") return;
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -168,19 +168,44 @@ const EventPage = () => {
     return now >= start && now <= end;
   };
 
+  /* --- 過去イベント判定 --- */
+  const isPastEvent = (event) => {
+    const now = new Date();
+    const end = new Date(event.end_date);
+    return now > end;
+  };
+
+  /* --- キーワード編集可能判定 --- */
+  const canEditKeyword = (event) => !isPublished(event) && !isPastEvent(event);
+
+  /* --- 削除可能判定 --- */
+  const canDelete = (event) => !isPublished(event) && !isPastEvent(event);
+
+  /* --- 日時表示フォーマット --- */
+  const formatDateTime = (datetime) => {
+    const d = new Date(datetime);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${y}/${m}/${day} ${h}:${min}`;
+  };
+
   /* --- 保存 --- */
   const handleSave = async (evt, skipCheck = false) => {
-    if (!skipCheck && !evt.id) {
-      const startDate = new Date(evt.start_date);
-      const today = new Date();
-      const isSameDay =
-        startDate.getFullYear() === today.getFullYear() &&
-        startDate.getMonth() === today.getMonth() &&
-        startDate.getDate() === today.getDate();
-
-      if (isSameDay) {
+    const now = new Date();
+    const startDate = new Date(evt.start_date);
+    const endDate = new Date(evt.end_date);
+  
+    // 「今日から公開になる場合」の確認
+    if (!skipCheck) {
+      const willBePublished = now >= startDate && now <= endDate;
+      const currentlyPublished = editingEvent ? isPublished(editingEvent) : false;
+  
+      if (willBePublished && !currentlyPublished) {
         return showConfirmation(
-          "開始日が今日のため、このまま公開されます。\nよろしいですか？",
+          "開始日時を今日に変更したため、このまま公開されます。\nよろしいですか？",
           () => {
             hideConfirmation();
             handleSave(evt, true);
@@ -263,8 +288,8 @@ const EventPage = () => {
     const evt = events.find((e) => e.id === id);
     if (!evt) return;
 
-    if (isPublished(evt)) {
-      showToast("公開中のイベントは削除できません", "error");
+    if (!canDelete(evt)) {
+      showToast("削除できません", "error");
       return;
     }
 
@@ -376,18 +401,18 @@ const EventPage = () => {
                     {getStatusBadge(event)}
                   </div>
                   <p className="text-sm text-slate-600">
-                    開始: {new Date(event.start_date).toLocaleString()}<br />
-                    終了: {new Date(event.end_date).toLocaleString()}
+                    開始: {formatDateTime(event.start_date)}<br />
+                    終了: {formatDateTime(event.end_date)}
                   </p>
                 </div>
 
                 <div className="flex flex-shrink-0 gap-2 self-end sm:self-center">
-                  <button onClick={() => handleEdit(event)} className="btn btn-ghost">
-                    <IconEdit />編集
-                  </button>
-
-                  {/* 削除ボタンは公開中以外のみ */}
-                  {!isPublished(event) && (
+                  {!isPastEvent(event) && (
+                    <button onClick={() => handleEdit(event)} className="btn btn-ghost">
+                      <IconEdit />編集
+                    </button>
+                  )}
+                  {canDelete(event) && (
                     <button onClick={() => handleDelete(event.id)} className="btn btn-danger">
                       削除
                     </button>
@@ -408,7 +433,7 @@ const EventPage = () => {
           event={editingEvent}
           onSave={handleSave}
           onClose={handleClose}
-          isKeywordLocked={editingEvent && isPublished(editingEvent)}
+          isKeywordLocked={editingEvent && !canEditKeyword(editingEvent)}
         />
       )}
     </div>
