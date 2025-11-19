@@ -70,7 +70,20 @@ const UserFormModal = ({ user, onSave, onClose }) => {
   );
 };
 
-/* --- メイン --- */
+/* --- 削除確認モーダル --- */
+const ConfirmModal = ({ message, onConfirm, onCancel }) => (
+  <div className="modal-overlay" onClick={onCancel}>
+    <div className="modal-content p-6 rounded-2xl bg-white shadow-lg max-w-sm mx-auto" onClick={(e) => e.stopPropagation()}>
+      <h2 className="text-xl font-bold text-slate-800 mb-4">確認</h2>
+      <p className="text-slate-700 mb-6">{message}</p>
+      <div className="flex justify-end gap-3">
+        <button onClick={onCancel} className="btn btn-secondary">キャンセル</button>
+        <button onClick={onConfirm} className="btn btn-rose-500">削除する</button>
+      </div>
+    </div>
+  </div>
+);
+
 const UserPage = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [users, setUsers] = useState([]);
@@ -81,6 +94,8 @@ const UserPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [notices, setNotices] = useState([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(null);
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
@@ -178,7 +193,31 @@ const UserPage = () => {
     fetchUsers();
   };
 
-  /* --- 通報理由取得 --- */
+  /* --- 削除処理 --- */
+  const handleDeleteClick = (user) => {
+    setDeletingUser(user);
+    setConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await fetch(`http://localhost/T01/public/api/users/destroy/${deletingUser.id}`, { method: "DELETE" });
+      showToast(`${deletingUser.username} を削除しました`, "success");
+      setConfirmOpen(false);
+      setDeletingUser(null);
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      showToast("削除失敗", "error");
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setConfirmOpen(false);
+    setDeletingUser(null);
+  };
+
+  /* --- 通報理由 --- */
   const getReportReason = (user) => {
     if (user.statuses_id === 3) return null; // 管理者は非表示
     const notice = notices.find(n => n.user_id === user.id);
@@ -212,9 +251,7 @@ const UserPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
-      {toast.visible && (
-        <Toast {...toast} onDismiss={() => setToast({ ...toast, visible: false })} />
-      )}
+      {toast.visible && <Toast {...toast} onDismiss={() => setToast({ ...toast, visible: false })} />}
 
       <div className="mx-auto max-w-7xl bg-white rounded-2xl p-6 shadow-lg sm:p-8">
         {/* ヘッダー */}
@@ -279,12 +316,20 @@ const UserPage = () => {
                   )}
                 </div>
 
-                <button
-                  onClick={() => handleEdit(user)}
-                  className="btn btn-ghost flex items-center gap-1 text-sky-600 hover:text-sky-800"
-                >
-                  <IconEdit /> 編集
-                </button>
+                {/* 右側ボタン */}
+                <div className="flex flex-shrink-0 gap-2 self-end sm:self-center">
+                  {/* 編集ボタンは常に表示 */}
+                  <button onClick={() => handleEdit(user)} className="btn btn-ghost flex items-center gap-1 text-gray-600 hover:text-gray-800">
+                    <IconEdit />編集
+                  </button>
+
+                  {/* 削除ボタンは通報ユーザーのみ */}
+                  {getReportReason(user) && (
+                    <button onClick={() => handleDeleteClick(user)} className="btn btn-danger">
+                      削除
+                    </button>
+                  )}
+                </div>
               </div>
             ))
           ) : (
@@ -300,9 +345,7 @@ const UserPage = () => {
             <button
               key={num}
               onClick={() => setPage(num)}
-              className={`px-4 py-2 rounded-lg ${
-                page === num ? "bg-sky-500 text-white shadow" : "bg-slate-200 text-slate-700"
-              }`}
+              className={`px-4 py-2 rounded-lg ${page === num ? "bg-sky-500 text-white shadow" : "bg-slate-200 text-slate-700"}`}
             >
               {num}
             </button>
@@ -310,9 +353,8 @@ const UserPage = () => {
         </div>
       </div>
 
-      {isModalOpen && (
-        <UserFormModal user={editingUser} onSave={handleSave} onClose={() => setIsModalOpen(false)} />
-      )}
+      {isModalOpen && <UserFormModal user={editingUser} onSave={handleSave} onClose={() => setIsModalOpen(false)} />}
+      {confirmOpen && <ConfirmModal message={`${deletingUser.username} を削除しますか？`} onConfirm={handleDeleteConfirm} onCancel={handleDeleteCancel} />}
     </div>
   );
 };
