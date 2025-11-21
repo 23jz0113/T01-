@@ -126,7 +126,7 @@ const EventPage = () => {
 
   const fetchEvents = async () => {
     try {
-      const res = await fetch("http://localhost/T01/public/api/rankings");
+      const res = await fetch("https://style.mydns.jp/T01/api/rankings");
       const data = await res.json();
       setEvents(data);
     } catch (err) {
@@ -135,53 +135,21 @@ const EventPage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  useEffect(() => { fetchEvents(); }, []);
 
   const showToast = (message, type = "success") => setToast({ message, type, visible: true });
-  const showConfirmation = (message, onConfirm, confirmText = "実行") =>
-    setConfirmation({ isOpen: true, message, onConfirm, confirmText });
-  const hideConfirmation = () =>
-    setConfirmation({ isOpen: false, message: "", onConfirm: null, confirmText: "実行" });
+  const showConfirmation = (message, onConfirm, confirmText = "実行") => setConfirmation({ isOpen: true, message, onConfirm, confirmText });
+  const hideConfirmation = () => setConfirmation({ isOpen: false, message: "", onConfirm: null, confirmText: "実行" });
 
-  const handleOpenNew = () => {
-    setEditingEvent(null);
-    setIsModalOpen(true);
-  };
+  const handleOpenNew = () => { setEditingEvent(null); setIsModalOpen(true); };
+  const handleEdit = (e) => { setEditingEvent(e); setIsModalOpen(true); };
+  const handleClose = () => { setIsModalOpen(false); setEditingEvent(null); };
 
-  const handleEdit = (e) => {
-    setEditingEvent(e);
-    setIsModalOpen(true);
-  };
-
-  const handleClose = () => {
-    setIsModalOpen(false);
-    setEditingEvent(null);
-  };
-
-  /* --- 公開中判定 --- */
-  const isPublished = (event) => {
-    const now = new Date();
-    const start = new Date(event.start_date);
-    const end = new Date(event.end_date);
-    return now >= start && now <= end;
-  };
-
-  /* --- 過去イベント判定 --- */
-  const isPastEvent = (event) => {
-    const now = new Date();
-    const end = new Date(event.end_date);
-    return now > end;
-  };
-
-  /* --- キーワード編集可能判定 --- */
+  const isPublished = (event) => { const now = new Date(); const start = new Date(event.start_date); const end = new Date(event.end_date); return now >= start && now <= end; };
+  const isPastEvent = (event) => { const now = new Date(); const end = new Date(event.end_date); return now > end; };
   const canEditKeyword = (event) => !isPublished(event) && !isPastEvent(event);
-
-  /* --- 削除可能判定 --- */
   const canDelete = (event) => !isPublished(event) && !isPastEvent(event);
 
-  /* --- 日時表示フォーマット --- */
   const formatDateTime = (datetime) => {
     const d = new Date(datetime);
     const y = d.getFullYear();
@@ -192,24 +160,17 @@ const EventPage = () => {
     return `${y}/${m}/${day} ${h}:${min}`;
   };
 
-  /* --- 保存 --- */
   const handleSave = async (evt, skipCheck = false) => {
     const now = new Date();
     const startDate = new Date(evt.start_date);
     const endDate = new Date(evt.end_date);
-  
-    // 「今日から公開になる場合」の確認
     if (!skipCheck) {
       const willBePublished = now >= startDate && now <= endDate;
       const currentlyPublished = editingEvent ? isPublished(editingEvent) : false;
-  
       if (willBePublished && !currentlyPublished) {
         return showConfirmation(
           "開始日時を今日に変更したため、このまま公開されます。\nよろしいですか？",
-          () => {
-            hideConfirmation();
-            handleSave(evt, true);
-          },
+          () => { hideConfirmation(); handleSave(evt, true); },
           "公開する"
         );
       }
@@ -217,61 +178,38 @@ const EventPage = () => {
 
     try {
       let keywordId = evt.keyword?.id;
-
       if (keywordId) {
-        const keywordRes = await fetch(
-          `http://localhost/T01/public/api/keywords/update/${keywordId}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: evt.keyword.name }),
-          }
-        );
+        const keywordRes = await fetch(`https://style.mydns.jp/T01/api/keywords/${keywordId}`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: evt.keyword.name })
+        });
         if (!keywordRes.ok) throw new Error("既存キーワード更新失敗");
       } else {
-        const keywordRes = await fetch(
-          "http://localhost/T01/public/api/keywords/upload",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: evt.keyword.name }),
-          }
-        );
+        const keywordRes = await fetch("https://style.mydns.jp/T01/api/keywords/upload", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: evt.keyword.name })
+        });
         if (!keywordRes.ok) throw new Error("新規キーワード作成失敗");
-
         const keywordData = await keywordRes.json();
         keywordId = keywordData.data?.id;
       }
 
       let rankingRes;
       if (evt.id) {
-        rankingRes = await fetch(
-          `http://localhost/T01/public/api/rankings/update/${evt.id}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              keywords_id: keywordId,
-              start_date: evt.start_date,
-              end_date: evt.end_date,
-            }),
-          }
-        );
+        rankingRes = await fetch(`https://style.mydns.jp/T01/api/rankings/${evt.id}`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+            keywords_id: keywordId,
+            start_date: evt.start_date,
+            end_date: evt.end_date
+          })
+        });
       } else {
-        rankingRes = await fetch(
-          "http://localhost/T01/public/api/rankings/upload",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              keywords_id: keywordId,
-              start_date: evt.start_date,
-              end_date: evt.end_date,
-            }),
-          }
-        );
+        rankingRes = await fetch("https://style.mydns.jp/T01/api/rankings/upload", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+            keywords_id: keywordId,
+            start_date: evt.start_date,
+            end_date: evt.end_date
+          })
+        });
       }
-
       if (!rankingRes.ok) throw new Error("ランキング保存失敗");
 
       showToast("保存しました");
@@ -283,70 +221,49 @@ const EventPage = () => {
     }
   };
 
-  /* --- 削除 --- */
   const handleDelete = (id) => {
     const evt = events.find((e) => e.id === id);
     if (!evt) return;
-
-    if (!canDelete(evt)) {
-      showToast("削除できません", "error");
-      return;
-    }
+    if (!canDelete(evt)) { showToast("削除できません", "error"); return; }
 
     showConfirmation(
       `「${evt.keyword?.name || evt.keyword || ""}」を削除しますか？`,
       async () => {
         hideConfirmation();
         try {
-          const rankingRes = await fetch(
-            `http://localhost/T01/public/api/rankings/destroy/${id}`,
-            { method: "DELETE" }
-          );
-
+          const rankingRes = await fetch(`https://style.mydns.jp/T01/api/rankings/destroy/${id}`, { method: "DELETE" });
           if (!rankingRes.ok) throw new Error("ランキング削除失敗");
 
           const keywordId = evt.keyword?.id;
-
           if (keywordId) {
-            const keywordRes = await fetch(
-              `http://localhost/T01/public/api/keywords/destroy/${keywordId}`,
-              { method: "DELETE" }
-            );
+            const keywordRes = await fetch(`https://style.mydns.jp/T01/api/keywords/destroy/${keywordId}`, { method: "DELETE" });
             if (!keywordRes.ok) throw new Error("キーワード削除失敗");
           }
 
           fetchEvents();
           showToast("削除しました");
-        } catch (err) {
-          console.error(err);
-          showToast("削除に失敗しました", "error");
-        }
+        } catch (err) { console.error(err); showToast("削除に失敗しました", "error"); }
       },
       "削除"
     );
   };
 
-  /* --- ステータスバッジ --- */
   const getStatusBadge = (event) => {
     const now = new Date();
     const start = new Date(event.start_date);
     const end = new Date(event.end_date);
-
     if (now < start) return <span className="status-badge bg-blue-500 text-white">公開予定</span>;
     if (now > end) return <span className="status-badge bg-gray-400 text-white">過去イベント</span>;
     return <span className="status-badge bg-green-500 text-white">公開中</span>;
   };
 
-  /* --- フィルタ --- */
   const filteredEvents = events.filter((e) => {
     const now = new Date();
     const start = new Date(e.start_date);
     const end = new Date(e.end_date);
-
     if (activeTab === "scheduled") return now < start;
     if (activeTab === "published") return now >= start && now <= end;
     if (activeTab === "archived") return now > end;
-
     return true;
   });
 
@@ -362,65 +279,38 @@ const EventPage = () => {
             <p className="text-slate-500 mt-1">開始・終了日時から公開状況を自動判定します。</p>
           </div>
           <button onClick={handleOpenNew} className="btn btn-primary w-full sm:w-auto">
-            <IconPlus />新規作成
+            <IconPlus /> 新規作成
           </button>
         </div>
 
-        {/* --- タブ --- */}
         <div className="my-6 flex justify-center">
           <div className="tab-group">
-            <button
-              onClick={() => setActiveTab("scheduled")}
-              className={`tab-item ${activeTab === "scheduled" ? "tab-item-active" : "tab-item-inactive"}`}
-            >
-              公開予定
-            </button>
-            <button
-              onClick={() => setActiveTab("published")}
-              className={`tab-item ${activeTab === "published" ? "tab-item-active" : "tab-item-inactive"}`}
-            >
-              公開中
-            </button>
-            <button
-              onClick={() => setActiveTab("archived")}
-              className={`tab-item ${activeTab === "archived" ? "tab-item-active" : "tab-item-inactive"}`}
-            >
-              過去イベント
-            </button>
+            <button onClick={() => setActiveTab("scheduled")} className={`tab-item ${activeTab === "scheduled" ? "tab-item-active" : "tab-item-inactive"}`}>公開予定</button>
+            <button onClick={() => setActiveTab("published")} className={`tab-item ${activeTab === "published" ? "tab-item-active" : "tab-item-inactive"}`}>公開中</button>
+            <button onClick={() => setActiveTab("archived")} className={`tab-item ${activeTab === "archived" ? "tab-item-active" : "tab-item-inactive"}`}>過去イベント</button>
           </div>
         </div>
 
-        {/* --- 表示リスト --- */}
         <div className="space-y-4">
-          {filteredEvents.length ? (
-            filteredEvents.map((event) => (
-              <div key={event.id} className="event-card">
-                <div className="flex-grow">
-                  <div className="flex items-center gap-2 mb-2">
-                    <p className="font-bold text-lg text-slate-800">{event.keyword?.name || event.keyword || "なし"}</p>
-                    {getStatusBadge(event)}
-                  </div>
-                  <p className="text-sm text-slate-600">
-                    開始: {formatDateTime(event.start_date)}<br />
-                    終了: {formatDateTime(event.end_date)}
-                  </p>
+          {filteredEvents.length ? filteredEvents.map((event) => (
+            <div key={event.id} className="event-card">
+              <div className="flex-grow">
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="font-bold text-lg text-slate-800">{event.keyword?.name || event.keyword || "なし"}</p>
+                  {getStatusBadge(event)}
                 </div>
-
-                <div className="flex flex-shrink-0 gap-2 self-end sm:self-center">
-                  {!isPastEvent(event) && (
-                    <button onClick={() => handleEdit(event)} className="btn btn-ghost">
-                      <IconEdit />編集
-                    </button>
-                  )}
-                  {canDelete(event) && (
-                    <button onClick={() => handleDelete(event.id)} className="btn btn-danger">
-                      削除
-                    </button>
-                  )}
-                </div>
+                <p className="text-sm text-slate-600">
+                  開始: {formatDateTime(event.start_date)}<br />
+                  終了: {formatDateTime(event.end_date)}
+                </p>
               </div>
-            ))
-          ) : (
+
+              <div className="flex flex-shrink-0 gap-2 self-end sm:self-center">
+                {!isPastEvent(event) && <button onClick={() => handleEdit(event)} className="btn btn-ghost"><IconEdit /> 編集</button>}
+                {canDelete(event) && <button onClick={() => handleDelete(event.id)} className="btn btn-danger">削除</button>}
+              </div>
+            </div>
+          )) : (
             <div className="text-center p-10 border-2 border-dashed rounded-lg text-slate-500">
               <p className="font-bold">イベントがありません</p>
             </div>
@@ -428,14 +318,7 @@ const EventPage = () => {
         </div>
       </div>
 
-      {isModalOpen && (
-        <EventFormModal
-          event={editingEvent}
-          onSave={handleSave}
-          onClose={handleClose}
-          isKeywordLocked={editingEvent && !canEditKeyword(editingEvent)}
-        />
-      )}
+      {isModalOpen && <EventFormModal event={editingEvent} onSave={handleSave} onClose={handleClose} isKeywordLocked={editingEvent && !canEditKeyword(editingEvent)} />}
     </div>
   );
 };

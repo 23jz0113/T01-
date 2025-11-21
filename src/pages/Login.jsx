@@ -17,22 +17,38 @@ export default function Login({ onLogin }) {
     setErrorMsg("");
 
     try {
-      const res = await fetch("http://localhost/T01/public/api/users");
+      const res = await fetch("https://style.mydns.jp/T01/api/users");
       const users = await res.json();
 
-      const user = users.find((u) => u.email === email);
-      if (!user) {
-        setErrorMsg("メールまたはパスワードが違います");
-        setLoading(false);
-        return;
-      }
+      // const user = users.find((u) => u.email === email);
+      // if (!user) {
+      //   setErrorMsg("メールまたはパスワードが違います");
+      //   setLoading(false);
+      //   return;
+      // }
 
-      const passwordMatch = await bcrypt.compare(password, user.password.trim());
-      if (!passwordMatch) {
-        setErrorMsg("メールまたはパスワードが違います");
-        setLoading(false);
-        return;
-      }
+      // const passwordMatch = await bcrypt.compare(password, user.password.trim());
+      // if (!passwordMatch) {
+      //   setErrorMsg("メールまたはパスワードが違います");
+      //   setLoading(false);
+      //   return;
+      // }
+      const user = users.find((u) => u.email === email);
+        if (!user) {
+          setErrorMsg("メールまたはパスワードが違います");
+          setLoading(false);
+          return;
+        }
+
+        // ★ 平文パスワード比較（bcrypt を使わない）
+        const passwordMatch = password === user.password.trim();
+
+        if (!passwordMatch) {
+          setErrorMsg("メールまたはパスワードが違います");
+          setLoading(false);
+          return;
+        }
+
 
       // 管理者チェック
       if (user.statuses_id !== 3) {

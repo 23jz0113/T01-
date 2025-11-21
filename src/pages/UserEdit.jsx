@@ -103,7 +103,7 @@ const UserPage = () => {
   /* --- API取得 --- */
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://localhost/T01/public/api/users/public");
+      const res = await fetch("https://style.mydns.jp/T01/api/users");
       const data = await res.json();
       const limited = data.slice(0, 100);
       setAllUsers(limited);
@@ -116,7 +116,7 @@ const UserPage = () => {
 
   const fetchNotices = async () => {
     try {
-      const res = await fetch("http://localhost/T01/public/api/notices");
+      const res = await fetch("https://style.mydns.jp/T01/api/notices");
       const data = await res.json();
       setNotices(data);
     } catch (err) {
@@ -165,7 +165,7 @@ const UserPage = () => {
     if (localHit.length > 0) return;
 
     try {
-      const res = await fetch("http://localhost/T01/public/api/users/search", {
+      const res = await fetch("https://style.mydns.jp/T01/api/users/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ keyword: search }),
@@ -201,7 +201,7 @@ const UserPage = () => {
 
   const handleDeleteConfirm = async () => {
     try {
-      await fetch(`http://localhost/T01/public/api/users/destroy/${deletingUser.id}`, { method: "DELETE" });
+      await fetch(`https://style.mydns.jp/T01/api/users/destroy/${deletingUser.id}`, { method: "DELETE" });
       showToast(`${deletingUser.username} を削除しました`, "success");
       setConfirmOpen(false);
       setDeletingUser(null);

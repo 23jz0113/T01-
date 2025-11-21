@@ -65,7 +65,7 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename='/admin'>
       {isLoggedIn && <IdleTimer onIdle={handleLogout} />}
       <div className="bg-slate-50 min-h-screen">
         {/* ✅ ログイン中のみNavbar表示 */}
