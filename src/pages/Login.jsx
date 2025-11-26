@@ -20,28 +20,22 @@ export default function Login({ onLogin }) {
       const res = await fetch("https://style.mydns.jp/T01/api/users");
       const users = await res.json();
 
-      // const user = users.find((u) => u.email === email);
-      // if (!user) {
-      //   setErrorMsg("メールまたはパスワードが違います");
-      //   setLoading(false);
-      //   return;
-      // }
-
-      // const passwordMatch = await bcrypt.compare(password, user.password.trim());
-      // if (!passwordMatch) {
-      //   setErrorMsg("メールまたはパスワードが違います");
-      //   setLoading(false);
-      //   return;
-      // }
       const user = users.find((u) => u.email === email);
-        if (!user) {
-          setErrorMsg("メールまたはパスワードが違います");
-          setLoading(false);
-          return;
-        }
+      if (!user) {
+        setErrorMsg("メールまたはパスワードが違います");
+        setLoading(false);
+        return;
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.password.trim());
+      if (!passwordMatch) {
+        setErrorMsg("メールまたはパスワードが違います");
+        setLoading(false);
+        return;
+      }
 
         // ★ 平文パスワード比較（bcrypt を使わない）
-        const passwordMatch = password === user.password.trim();
+        // const passwordMatch = password === user.password.trim();
 
         if (!passwordMatch) {
           setErrorMsg("メールまたはパスワードが違います");
@@ -75,7 +69,7 @@ export default function Login({ onLogin }) {
         onSubmit={handleLogin}
         className="bg-white shadow-lg p-8 rounded-2xl w-96"
       >
-        <h2 className="text-2xl font-bold text-center mb-6">ログイン</h2>
+        <h2 className="text-2xl font-bold text-center mb-6">管理者ログイン</h2>
 
         {errorMsg && (
           <div className="bg-red-100 text-red-600 p-3 rounded mb-4 text-sm">
