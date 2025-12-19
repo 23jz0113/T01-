@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import bcrypt from "bcryptjs";
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState("");
@@ -17,45 +16,33 @@ export default function Login({ onLogin }) {
     setErrorMsg("");
 
     try {
-      const res = await fetch("https://style.mydns.jp/T01/api/users");
-      const users = await res.json();
+      const res = await fetch("https://style.mydns.jp/T01/api/login", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      const user = users.find((u) => u.email === email);
-      if (!user) {
-        setErrorMsg("メールまたはパスワードが違います");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMsg(data.message || "メールまたはパスワードが違います");
         setLoading(false);
         return;
       }
 
-      const passwordMatch = await bcrypt.compare(password, user.password.trim());
-      if (!passwordMatch) {
-        setErrorMsg("メールまたはパスワードが違います");
-        setLoading(false);
-        return;
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
       }
 
-        // ★ 平文パスワード比較（bcrypt を使わない）
-        // const passwordMatch = password === user.password.trim();
-
-        if (!passwordMatch) {
-          setErrorMsg("メールまたはパスワードが違います");
-          setLoading(false);
-          return;
-        }
-
-
-      // 管理者チェック
-      if (user.statuses_id !== 3) {
-        setErrorMsg("管理者ではありません");
-        setLoading(false);
-        return;
-      }
-
-      // ✅ ログイン成功 → App.jsx にユーザー情報を渡す
-      localStorage.setItem("user", JSON.stringify(user));
-      onLogin(user);  // ← ここで user オブジェクトを渡す
-
+      onLogin();
       navigate("/event-edit");
+
     } catch (err) {
       setErrorMsg("サーバーに接続できませんでした");
     } finally {

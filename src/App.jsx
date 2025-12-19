@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import EventEdit from './pages/EventEdit';
 import UserEdit from './pages/UserEdit';
+import BrandsAndCategories from './pages/BrandsAndCategories';
 import Logout from './pages/Logout';
 
 // 無操作時に自動ログアウトするタイマーコンポーネント
@@ -81,6 +82,10 @@ function App() {
             <Route
               path="/user-edit"
               element={<ProtectedRoute isLoggedIn={isLoggedIn}><UserEdit /></ProtectedRoute>}
+            />
+            <Route
+              path="/brands-categories"
+              element={<ProtectedRoute isLoggedIn={isLoggedIn}><BrandsAndCategories /></ProtectedRoute>}
             />
           </Routes>
         </main>

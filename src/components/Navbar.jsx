@@ -49,6 +49,7 @@ export default function Navbar({ onLogout }) {
   const navLinks = [
     { to: "/event-edit", text: "イベント管理" },
     { to: "/user-edit", text: "ユーザー管理" },
+    { to: "/brands-categories", text: "ブランド・カテゴリー" },
   ];
 
   const handleLogoutConfirm = () => {

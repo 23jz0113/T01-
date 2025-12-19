@@ -1,19 +1,43 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-// App.jsxからonLogout関数を受け取る
 export default function Logout({ onLogout }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    onLogout(); // ★App.jsxのisLoggedInをfalseにする
-    
-    const timer = setTimeout(() => {
-      navigate("/"); // ログインページへリダイレクト
-    }, 1500);
+    const performLogout = async () => {
+      const token = localStorage.getItem("token");
 
-    return () => clearTimeout(timer);
-  }, [navigate, onLogout]);
+      // サーバー側でトークンを無効化
+      if (token) {
+        try {
+          await fetch("https://style.mydns.jp/T01/api/logout", {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json',
+            },
+          });
+        } catch (error) {
+          // APIエラーが発生してもクライアントのログアウト処理は続行
+          console.error("Logout API call failed:", error);
+        }
+      }
+
+      // クライアント側のセッションをクリア
+      onLogout();
+      
+      // 遅延後にログインページへリダイレクト
+      const timer = setTimeout(() => {
+        navigate("/");
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    };
+
+    performLogout();
+
+  }, [onLogout, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100">
