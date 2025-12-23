@@ -33,6 +33,12 @@ export default function Login({ onLogin }) {
         return;
       }
 
+      if (data.user && data.user.statuses_id !== 3) {
+        setErrorMsg("管理者ではありません");
+        setLoading(false);
+        return;
+      }
+
       if (data.token) {
         localStorage.setItem("token", data.token);
       }
