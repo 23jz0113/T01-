@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import api from "../api/api.jsx";
 
 /* --- トースト通知 --- */
 const Toast = ({ message, type, onDismiss }) => {
@@ -22,9 +23,8 @@ const BrandsAndCategories = () => {
 
   const fetchBrands = async () => {
     try {
-      const res = await fetch("https://style.mydns.jp/T01/api/brands");
-      const data = await res.json();
-      setBrands(data);
+      const res = await api.get("/brands");
+      setBrands(res.data);
     } catch (err) {
       console.error("Error fetching brands:", err);
       showToast("ブランドの取得に失敗しました", "error");
@@ -33,9 +33,8 @@ const BrandsAndCategories = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("https://style.mydns.jp/T01/api/categories");
-      const data = await res.json();
-      setCategories(data);
+      const res = await api.get("/categories");
+      setCategories(res.data);
     } catch (err) {
       console.error("Error fetching categories:", err);
       showToast("カテゴリーの取得に失敗しました", "error");
@@ -43,41 +42,12 @@ const BrandsAndCategories = () => {
   };
 
   const handleDelete = async (id, type) => {
-    const url = `https://style.mydns.jp/T01/api/${type}/${id}`;
-    const token = localStorage.getItem("token");
-
     if (!window.confirm(`${type === 'brands' ? 'ブランド' : 'カテゴリー'}を削除しますか？`)) {
       return;
     }
 
     try {
-      const res = await fetch(url, {
-        method: "POST", // DELETEからPOSTに変更
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ _method: "DELETE" }), // メソッドオーバーライド
-      });
-
-      if (!res.ok) {
-        let errorMessage = "削除に失敗しました";
-        if (res.status === 404) {
-          errorMessage = "アイテムはすでに削除されています。";
-          // リストを再同期
-          if (type === "brands") {
-            fetchBrands();
-          } else {
-            fetchCategories();
-          }
-        } else if (res.status === 405) {
-          errorMessage = "サーバーがこの操作を許可していません。";
-        } else if (res.status === 403) {
-          errorMessage = "権限がありません。";
-        }
-        showToast(errorMessage, "error");
-        return;
-      }
+      await api.post(`/${type}/${id}`, { _method: "DELETE" });
 
       showToast(`${type === 'brands' ? 'ブランド' : 'カテゴリー'}を削除しました`);
       if (type === "brands") {
@@ -87,7 +57,25 @@ const BrandsAndCategories = () => {
       }
     } catch (err) {
       console.error(`Error deleting ${type}:`, err);
-      showToast("削除中にエラーが発生しました", "error");
+      let errorMessage = "削除中にエラーが発生しました";
+      if (err.response) {
+        switch (err.response.status) {
+          case 404:
+            errorMessage = "アイテムはすでに削除されています。";
+            if (type === "brands") fetchBrands();
+            else fetchCategories();
+            break;
+          case 405:
+            errorMessage = "サーバーがこの操作を許可していません。";
+            break;
+          case 403:
+            errorMessage = "権限がありません。";
+            break;
+          default:
+            errorMessage = "削除に失敗しました";
+        }
+      }
+      showToast(errorMessage, "error");
     }
   };
 

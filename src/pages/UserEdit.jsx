@@ -27,13 +27,18 @@ const Toast = ({ message, type, onDismiss }) => {
 
 /* --- ユーザー編集モーダル --- */
 const UserFormModal = ({ user, onSave, onClose }) => {
-  const [formData, setFormData] = useState({ username: "", email: "", status: 1 });
+  const [formData, setFormData] = useState({ username: "", email: "", statuses_id: 1 });
 
   useEffect(() => {
-    if (user) setFormData({ username: user.username, email: user.email, status: user.statuses_id });
+    if (user) setFormData({ username: user.username, email: user.email, statuses_id: user.statuses_id });
   }, [user]);
 
-  const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const handleChange = (e) => {
+    const { name, value } = e.target;
+    // The value from a select is a string, so parse it to a number for the ID field.
+    const newValue = name === 'statuses_id' ? parseInt(value, 10) : value;
+    setFormData(prev => ({ ...prev, [name]: newValue }));
+  };
   const handleSubmit = () => onSave(formData);
 
   return (
@@ -54,7 +59,7 @@ const UserFormModal = ({ user, onSave, onClose }) => {
           </div>
           <div>
             <label className="input-label">ステータス</label>
-            <select name="status" value={formData.status} onChange={handleChange} className="input-field w-full">
+            <select name="statuses_id" value={formData.statuses_id} onChange={handleChange} className="input-field w-full">
               <option value={1}>一般ユーザー</option>
               <option value={2}>認証ユーザー</option>
             </select>
@@ -186,11 +191,21 @@ const UserPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = (data) => {
-    console.log("保存データ", data);
+  const handleSave = async (data) => {
     setIsModalOpen(false);
-    showToast("ユーザー情報を保存しました");
-    fetchUsers();
+    try {
+      const res = await fetch(`https://style.mydns.jp/T01/api/users/${editingUser.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, _method: "PUT" }),
+      });
+      if (!res.ok) throw new Error("Server error");
+      showToast("ユーザー情報を保存しました");
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      showToast("更新失敗", "error");
+    }
   };
 
   /* --- 削除処理 --- */

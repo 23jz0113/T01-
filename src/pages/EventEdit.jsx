@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import api from "../api/api.jsx";
 
 /* --- アイコン --- */
 const IconPlus = () => (
@@ -126,18 +127,13 @@ const EventPage = () => {
 
   const fetchEvents = async () => {
     try {
-      const res = await fetch("https://style.mydns.jp/T01/api/rankings");
-      if (!res.ok) {
-        if (res.status === 404) {
-          // 404の場合はイベントがないとみなし、空の配列をセット
-          setEvents([]);
-          return;
-        }
-        throw new Error(`Server responded with status ${res.status}`);
-      }
-      const data = await res.json();
-      setEvents(data);
+      const res = await api.get("/rankings");
+      setEvents(res.data);
     } catch (err) {
+      if (err.response && err.response.status === 404) {
+        setEvents([]);
+        return;
+      }
       console.error(err);
       showToast("イベントの取得に失敗しました", "error");
     }
@@ -218,48 +214,24 @@ const EventPage = () => {
 
       /* --- キーワード更新 or 新規 --- */
       if (keywordId) {
-        const keywordRes = await fetch(`https://style.mydns.jp/T01/api/keywords/${keywordId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: evt.keyword.name }),
-        });
-        if (!keywordRes.ok) throw new Error("既存キーワード更新失敗");
+        await api.post(`/keywords/${keywordId}`, { name: evt.keyword.name });
       } else {
-        const keywordRes = await fetch("https://style.mydns.jp/T01/api/keywords", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: evt.keyword.name }),
-        });
-        if (!keywordRes.ok) throw new Error("新規キーワード作成失敗");
-        const keywordData = await keywordRes.json();
-        keywordId = keywordData.data?.id;
+        const res = await api.post("/keywords", { name: evt.keyword.name });
+        keywordId = res.data.data?.id;
       }
 
       /* --- ランキング更新 or 新規 --- */
-      let rankingRes;
-      if (evt.id) {
-        rankingRes = await fetch(`https://style.mydns.jp/T01/api/rankings/${evt.id}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            keywords_id: keywordId,
-            start_date: evt.start_date,
-            end_date: evt.end_date,
-          }),
-        });
-      } else {
-        rankingRes = await fetch("https://style.mydns.jp/T01/api/rankings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            keywords_id: keywordId,
-            start_date: evt.start_date,
-            end_date: evt.end_date,
-          }),
-        });
-      }
+      const rankingData = {
+        keywords_id: keywordId,
+        start_date: evt.start_date,
+        end_date: evt.end_date,
+      };
 
-      if (!rankingRes.ok) throw new Error("ランキング保存失敗");
+      if (evt.id) {
+        await api.post(`/rankings/${evt.id}`, rankingData);
+      } else {
+        await api.post("/rankings", rankingData);
+      }
 
       showToast("保存しました");
       handleClose();
@@ -285,33 +257,30 @@ const EventPage = () => {
       async () => {
         hideConfirmation();
         try {
-          const res = await fetch(`https://style.mydns.jp/T01/api/rankings/${id}`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ _method: "DELETE" }),
-          });
-
-          if (!res.ok) {
-            let errorMessage = "削除に失敗しました";
-            if (res.status === 404) {
-              errorMessage = "アイテムはすでに削除されています。";
-              fetchEvents(); // リストを再同期
-            } else if (res.status === 405) {
-              errorMessage = "サーバーがこの操作を許可していません。";
-            } else if (res.status === 403) {
-              errorMessage = "権限がありません。";
-            }
-            showToast(errorMessage, "error");
-            return;
-          }
+          await api.post(`/rankings/${id}`, { _method: "DELETE" });
 
           fetchEvents();
           showToast("削除しました");
         } catch (err) {
           console.error(err);
-          showToast("削除中にエラーが発生しました", "error");
+          let errorMessage = "削除中にエラーが発生しました";
+           if (err.response) {
+            switch (err.response.status) {
+              case 404:
+                errorMessage = "アイテムはすでに削除されています。";
+                fetchEvents(); // リストを再同期
+                break;
+              case 405:
+                errorMessage = "サーバーがこの操作を許可していません。";
+                break;
+              case 403:
+                errorMessage = "権限がありません。";
+                break;
+              default:
+                errorMessage = "削除に失敗しました";
+            }
+          }
+          showToast(errorMessage, "error");
         }
       },
       "削除"

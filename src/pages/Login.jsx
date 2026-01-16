@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api/api.jsx";
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState("");
@@ -16,22 +17,9 @@ export default function Login({ onLogin }) {
     setErrorMsg("");
 
     try {
-      const res = await fetch("https://style.mydns.jp/T01/api/login", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await api.post("/login", { email, password });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setErrorMsg(data.message || "メールまたはパスワードが違います");
-        setLoading(false);
-        return;
-      }
+      const data = res.data;
 
       if (data.user && data.user.statuses_id !== 3) {
         setErrorMsg("管理者ではありません");
@@ -50,7 +38,11 @@ export default function Login({ onLogin }) {
       navigate("/event-edit");
 
     } catch (err) {
-      setErrorMsg("サーバーに接続できませんでした");
+      if (err.response && err.response.data) {
+        setErrorMsg(err.response.data.message || "メールまたはパスワードが違います");
+      } else {
+        setErrorMsg("サーバーに接続できませんでした");
+      }
     } finally {
       setLoading(false);
     }
