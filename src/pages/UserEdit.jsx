@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import api from "../api/api.jsx";
 
 /* --- アイコン --- */
 const IconEdit = () => (
@@ -108,9 +109,8 @@ const UserPage = () => {
   /* --- API取得 --- */
   const fetchUsers = async () => {
     try {
-      const res = await fetch("https://style.mydns.jp/T01/api/users");
-      const data = await res.json();
-      const limited = data.slice(0, 100);
+      const res = await api.get("/users");
+      const limited = res.data.slice(0, 100);
       setAllUsers(limited);
       setUsers(limited);
     } catch (err) {
@@ -121,9 +121,8 @@ const UserPage = () => {
 
   const fetchNotices = async () => {
     try {
-      const res = await fetch("https://style.mydns.jp/T01/api/notices");
-      const data = await res.json();
-      setNotices(data);
+      const res = await api.get("/notices");
+      setNotices(res.data);
     } catch (err) {
       console.error(err);
       showToast("通報データ取得失敗", "error");
@@ -170,14 +169,8 @@ const UserPage = () => {
     if (localHit.length > 0) return;
 
     try {
-      const res = await fetch("https://style.mydns.jp/T01/api/users/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword: search }),
-      });
-
-      const data = await res.json();
-      setUsers(data.slice(0, 100));
+      const res = await api.post("/users/search", { keyword: search });
+      setUsers(res.data.slice(0, 100));
       setPage(1);
       showToast("検索しました");
     } catch (err) {
@@ -194,12 +187,7 @@ const UserPage = () => {
   const handleSave = async (data) => {
     setIsModalOpen(false);
     try {
-      const res = await fetch(`https://style.mydns.jp/T01/api/users/${editingUser.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, _method: "PUT" }),
-      });
-      if (!res.ok) throw new Error("Server error");
+      await api.post(`/users/${editingUser.id}`, { ...data, _method: "PUT" });
       showToast("ユーザー情報を保存しました");
       fetchUsers();
     } catch (err) {
@@ -216,7 +204,8 @@ const UserPage = () => {
 
   const handleDeleteConfirm = async () => {
     try {
-      await fetch(`https://style.mydns.jp/T01/api/users/destroy/${deletingUser.id}`, { method: "DELETE" });
+      // The user wants to keep this as a POST request with method override
+      await api.post(`/users/destroy/${deletingUser.id}`, { _method: "DELETE" });
       showToast(`${deletingUser.username} を削除しました`, "success");
       setConfirmOpen(false);
       setDeletingUser(null);
