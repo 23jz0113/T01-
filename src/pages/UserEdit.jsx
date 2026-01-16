@@ -84,7 +84,7 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => (
       <p className="text-slate-700 mb-6">{message}</p>
       <div className="flex justify-end gap-3">
         <button onClick={onCancel} className="btn btn-secondary">キャンセル</button>
-        <button onClick={onConfirm} className="btn btn-rose-500">削除する</button>
+        <button onClick={onConfirm} className="btn btn-danger">削除する</button>
       </div>
     </div>
   </div>
@@ -204,8 +204,7 @@ const UserPage = () => {
 
   const handleDeleteConfirm = async () => {
     try {
-      // The user wants to keep this as a POST request with method override
-      await api.post(`/users/destroy/${deletingUser.id}`, { _method: "DELETE" });
+      await api.delete(`/users/${deletingUser.id}`);
       showToast(`${deletingUser.username} を削除しました`, "success");
       setConfirmOpen(false);
       setDeletingUser(null);
