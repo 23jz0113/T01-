@@ -214,7 +214,7 @@ const EventPage = () => {
 
       /* --- キーワード更新 or 新規 --- */
       if (keywordId) {
-        await api.post(`/keywords/${keywordId}`, { name: evt.keyword.name });
+        await api.put(`/keywords/${keywordId}`, { name: evt.keyword.name });
       } else {
         const res = await api.post("/keywords", { name: evt.keyword.name });
         keywordId = res.data.data?.id;
@@ -228,7 +228,7 @@ const EventPage = () => {
       };
 
       if (evt.id) {
-        await api.post(`/rankings/${evt.id}`, rankingData);
+        await api.put(`/rankings/${evt.id}`, rankingData);
       } else {
         await api.post("/rankings", rankingData);
       }
