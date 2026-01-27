@@ -7,3 +7,8 @@
   RewriteCond %{REQUEST_FILENAME} !-l
   RewriteRule . /admin/index.html [L]
 </IfModule>
+
+# Deny access to sensitive files
+<Files ".env">
+    Require all denied
+</Files>

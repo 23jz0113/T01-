@@ -16,8 +16,8 @@ export default function Logout({ onLogout }) {
       }
 
       // クライアント側のセッションをクリア
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("user");
       onLogout();
       
       // 遅延後にログインページへリダイレクト

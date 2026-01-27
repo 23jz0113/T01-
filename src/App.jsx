@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, BrowserRouter, useNavigate } from 'react-router-dom';
+import { Routes, Route, BrowserRouter, useNavigate, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -7,6 +7,7 @@ import EventEdit from './pages/EventEdit';
 import UserEdit from './pages/UserEdit';
 import BrandsAndCategories from './pages/BrandsAndCategories';
 import Logout from './pages/Logout';
+import api from './api/api';
 
 // 無操作時に自動ログアウトするタイマーコンポーネント
 const IdleTimer = ({ onIdle }) => {
@@ -37,55 +38,49 @@ const IdleTimer = ({ onIdle }) => {
 };
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
+  const [token, setToken] = useState(sessionStorage.getItem('token'));
+  const isAuthenticated = !!token;
 
-  useEffect(() => {
-    localStorage.setItem('isLoggedIn', isLoggedIn);
-  }, [isLoggedIn]);
-
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    sessionStorage.setItem("sessionToken", "true"); // ✅ セッション作成
+  const handleSetToken = (newToken) => {
+    setToken(newToken);
+    sessionStorage.setItem('token', newToken);
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    sessionStorage.removeItem("sessionToken"); // ✅ セッション削除
-    localStorage.setItem("isLoggedIn", "false");
+    setToken(null);
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
   };
-
-  // ✅ 起動時にログイン状態をチェック
-  useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const session = sessionStorage.getItem("sessionToken");
-
-    if (!session || !loggedIn) {
-      localStorage.setItem("isLoggedIn", "false");
-      setIsLoggedIn(false);
-    }
-  }, []);
 
   return (
     <BrowserRouter basename='/admin'>
-      {isLoggedIn && <IdleTimer onIdle={handleLogout} />}
+      {isAuthenticated && <IdleTimer onIdle={handleLogout} />}
       <div className="bg-slate-50 min-h-screen">
-        {/* ✅ ログイン中のみNavbar表示 */}
-        {isLoggedIn && <Navbar isLoggedIn={isLoggedIn} onLogout={handleLogout} />}
-        <main className={isLoggedIn ? "pt-20" : ""}>
+        {isAuthenticated && <Navbar onLogout={handleLogout} />}
+        <main className={isAuthenticated ? "pt-20" : ""}>
           <Routes>
-            <Route path="/" element={<Login onLogin={handleLogin} />} />
+            <Route
+              path="/"
+              element={
+                isAuthenticated ? (
+                  <Navigate to="/event-edit" replace />
+                ) : (
+                  <Login onLoginSuccess={handleSetToken} />
+                )
+              }
+            />
             <Route path="/logout" element={<Logout onLogout={handleLogout} />} />
             <Route
               path="/event-edit"
-              element={<ProtectedRoute isLoggedIn={isLoggedIn}><EventEdit /></ProtectedRoute>}
+              element={<ProtectedRoute isLoggedIn={isAuthenticated}><EventEdit /></ProtectedRoute>}
             />
             <Route
               path="/user-edit"
-              element={<ProtectedRoute isLoggedIn={isLoggedIn}><UserEdit /></ProtectedRoute>}
+              element={<ProtectedRoute isLoggedIn={isAuthenticated}><UserEdit /></ProtectedRoute>}
             />
             <Route
               path="/brands-categories"
-              element={<ProtectedRoute isLoggedIn={isLoggedIn}><BrandsAndCategories /></ProtectedRoute>}
+              element={<ProtectedRoute isLoggedIn={isAuthenticated}><BrandsAndCategories /></ProtectedRoute>}
             />
           </Routes>
         </main>

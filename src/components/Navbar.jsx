@@ -36,9 +36,9 @@ export default function Navbar({ onLogout }) {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  // localStorage からユーザー情報を取得
+  // sessionStorage からユーザー情報を取得
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const storedUser = JSON.parse(sessionStorage.getItem("user"));
     if (storedUser) setUser(storedUser);
   }, []);
 
@@ -54,8 +54,6 @@ export default function Navbar({ onLogout }) {
 
   const handleLogoutConfirm = () => {
     sessionStorage.clear();
-    localStorage.setItem("isLoggedIn", "false");
-    localStorage.removeItem("user");
     if (onLogout) onLogout();
     setIsLogoutModalOpen(false);
     navigate("/logout");

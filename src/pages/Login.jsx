@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api.jsx";
 
-export default function Login({ onLogin }) {
+export default function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,13 +28,12 @@ export default function Login({ onLogin }) {
       }
 
       if (data.token) {
-        localStorage.setItem("token", data.token);
+        onLoginSuccess(data.token);
       }
       if (data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
+        sessionStorage.setItem("user", JSON.stringify(data.user));
       }
 
-      onLogin();
       navigate("/event-edit");
 
     } catch (err) {
