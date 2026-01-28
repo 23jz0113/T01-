@@ -65,6 +65,8 @@ const EventFormModal = ({ event, onSave, onClose, isKeywordLocked }) => {
   const handleSubmit = () => {
     if (!formData.keyword.trim()) return setError("キーワードを入力してください");
     if (!formData.start_date || !formData.end_date) return setError("開始日・終了日を入力してください");
+    if (new Date(formData.end_date) < new Date()) return setError("すでに終了しているイベントは作成できません");
+    if (new Date(formData.start_date) >= new Date(formData.end_date)) return setError("終了日時は開始日時より後に設定してください");
 
     onSave({
       ...event,
